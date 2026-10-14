@@ -61,6 +61,20 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            // Show setup window only when no JWT is configured yet
+            let cfg_check = config::AgentConfig::load();
+            if cfg_check.jwt.is_none() {
+                tauri::WebviewWindowBuilder::new(
+                    app,
+                    "setup",
+                    tauri::WebviewUrl::App("index.html".into()),
+                )
+                .title("DevEnv Setup")
+                .inner_size(400.0, 300.0)
+                .resizable(false)
+                .build()?;
+            }
+
             // Build tray icon
             tauri::tray::TrayIconBuilder::with_id("main")
                 .tooltip("DevEnv")
