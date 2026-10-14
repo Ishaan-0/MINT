@@ -4,13 +4,12 @@ import { computeCompliance, computeHealthScore } from '@/lib/compliance'
 import { buildSnapshotRecord } from './handler'
 import type { MachineSnapshot } from '@/types'
 
-// Uses service role to bypass RLS for agent writes
-const adminSupabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function POST(request: Request) {
+  // Uses service role to bypass RLS for agent writes (lazy init — env vars not available at build time)
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const authHeader = request.headers.get('authorization')
   if (!authHeader?.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
     .from('machines')
     .upsert(
       { user_id: user.id, hostname: body.hostname, os_version: body.os_version,
-        org_id: await getOrgId(user.id), last_synced_at: body.scanned_at },
+        org_id: await getOrgId(adminSupabase, user.id), last_synced_at: body.scanned_at },
       { onConflict: 'user_id' }
     )
     .select()
@@ -79,7 +78,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ machine_id: machine.id, health_score: healthScore })
 }
 
-async function getOrgId(userId: string): Promise<string> {
+async function getOrgId(adminSupabase: ReturnType<typeof createClient>, userId: string): Promise<string> {
   const { data } = await adminSupabase
     .from('user_profiles')
     .select('org_id')
