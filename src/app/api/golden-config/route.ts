@@ -48,8 +48,10 @@ export async function PUT(request: Request) {
   // TODO: trigger recomputation for all org machines on config save
   const { data: config, error } = await supabase
     .from('golden_configs')
-    .update({ rules, updated_by: user.id, updated_at: new Date().toISOString() })
-    .eq('org_id', profile.org_id)
+    .upsert(
+      { org_id: profile.org_id, rules, updated_by: user.id, updated_at: new Date().toISOString() },
+      { onConflict: 'org_id' }
+    )
     .select()
     .single()
 

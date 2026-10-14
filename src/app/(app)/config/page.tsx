@@ -30,8 +30,10 @@ export default async function ConfigPage() {
     if (!u) return
     // TODO: trigger recomputation for all org machines on config save
     await sb.from('golden_configs')
-      .update({ rules, updated_by: u.id, updated_at: new Date().toISOString() })
-      .eq('org_id', profile!.org_id)
+      .upsert(
+        { org_id: profile!.org_id, rules, updated_by: u.id, updated_at: new Date().toISOString() },
+        { onConflict: 'org_id' }
+      )
   }
 
   return (
