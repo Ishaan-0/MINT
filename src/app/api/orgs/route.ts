@@ -20,10 +20,12 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
   // Update user profile to manager of this org
-  await supabase
+  const { error: profileError } = await supabase
     .from('user_profiles')
     .update({ org_id: org.id, role: 'manager' })
     .eq('id', user.id)
+
+  if (profileError) return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 })
 
   // Create empty golden config for org
   await supabase

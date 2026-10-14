@@ -9,6 +9,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
   const router = useRouter()
   const [invite, setInvite] = useState<{ valid: boolean; org_name?: string } | null>(null)
   const [accepting, setAccepting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/invites/${token}`).then(r => r.json()).then(setInvite)
@@ -16,9 +17,15 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 
   async function accept() {
     setAccepting(true)
+    setError(null)
     const res = await fetch(`/api/invites/${token}`, { method: 'POST' })
-    if (res.ok) router.push('/me')
-    else setAccepting(false)
+    if (res.ok) {
+      router.push('/me')
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'Failed to accept invite')
+      setAccepting(false)
+    }
   }
 
   if (!invite) return <div className="min-h-screen flex items-center justify-center">Loading…</div>
@@ -47,6 +54,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
           <Button className="w-full" onClick={accept} disabled={accepting}>
             {accepting ? 'Joining…' : 'Accept invite'}
           </Button>
+          {error && <p className="text-sm text-red-600">{error}</p>}
         </CardContent>
       </Card>
     </div>

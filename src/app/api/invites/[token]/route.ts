@@ -34,21 +34,20 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: invite } = await supabase
-    .from('invites')
-    .select('*')
-    .eq('token', token)
-    .single()
-
-  if (!invite || !isInviteValid(invite)) {
-    return NextResponse.json({ error: 'Invalid or expired invite' }, { status: 400 })
-  }
-
-  // Mark invite used
-  await supabase
+  // Atomic conditional UPDATE — prevents TOCTOU race on concurrent accepts
+  const { data: updated, error: updateError } = await supabase
     .from('invites')
     .update({ used_by: user.id, used_at: new Date().toISOString() })
-    .eq('id', invite.id)
+    .eq('token', token)
+    .is('used_by', null)
+    .gt('expires_at', new Date().toISOString())
+    .select()
+
+  if (updateError || !updated || updated.length === 0) {
+    return NextResponse.json({ error: 'Invite already used or expired' }, { status: 409 })
+  }
+
+  const invite = updated[0]
 
   // Set user as engineer in org
   await supabase
@@ -57,7 +56,8 @@ export async function POST(
     .eq('id', user.id)
 
   // Increment seat count
-  await supabase.rpc('increment_seat_count', { org_id: invite.org_id })
+  const { error: rpcError } = await supabase.rpc('increment_seat_count', { org_id: invite.org_id })
+  if (rpcError) return NextResponse.json({ error: 'Failed to increment seat count' }, { status: 500 })
 
   return NextResponse.json({ success: true })
 }
