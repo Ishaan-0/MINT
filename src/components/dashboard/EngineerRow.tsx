@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
-import type { EngineerHealthRow } from '@/types'
+import type { EngineerHealthRow, MachineSnapshot } from '@/types'
+import { getFixCommand } from '@/lib/fix-commands'
 
 type Props = { row: EngineerHealthRow }
 
@@ -47,7 +48,14 @@ export function EngineerRow({ row }: Props) {
               <div>
                 <p className="font-medium text-red-700 mb-1">Failing ({compliance.failing.length})</p>
                 {compliance.failing.map((r: any) => (
-                  <p key={r.tool} className="font-mono text-muted-foreground">{r.tool} {r.required_version ?? ''}</p>
+                  <div key={r.tool} className="mb-2">
+                    <p className="font-mono text-muted-foreground">{r.tool} {r.required_version ?? ''}</p>
+                    {machine?.snapshot && (
+                      <code className="text-xs bg-gray-100 p-1 rounded block mt-1">
+                        {getFixCommand(r, machine.snapshot as MachineSnapshot)}
+                      </code>
+                    )}
+                  </div>
                 ))}
               </div>
               <div>
