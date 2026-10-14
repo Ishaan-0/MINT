@@ -1,0 +1,13 @@
+{
+  "productName": "DevEnv",
+  "version": "0.1.0",
+  "identifier": "com.devenv.agent",
+  "app": {
+    "withGlobalTauri": true,
+    "windows": []
+  },
+  "bundle": {
+    "active": false,
+    "icon": []
+  }
+}
