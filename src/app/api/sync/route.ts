@@ -78,7 +78,8 @@ export async function POST(request: Request) {
   return NextResponse.json({ machine_id: machine.id, health_score: healthScore })
 }
 
-async function getOrgId(adminSupabase: ReturnType<typeof createClient>, userId: string): Promise<string> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getOrgId(adminSupabase: any, userId: string): Promise<string> {
   const { data } = await adminSupabase
     .from('user_profiles')
     .select('org_id')
