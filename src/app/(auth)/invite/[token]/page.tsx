@@ -1,5 +1,4 @@
 'use client'
-export const dynamic = 'force-dynamic'
 import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
