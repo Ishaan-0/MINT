@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ComplianceChecklist } from '@/components/engineer/ComplianceChecklist'
+import { computeCompliance } from '@/lib/compliance'
 
 export default async function MePage() {
   const supabase = await createClient()
@@ -33,8 +34,7 @@ export default async function MePage() {
     .eq('id', user.id)
     .single()
 
-  const [{ data: compliance }, { data: config }, { data: snapshot }] = await Promise.all([
-    supabase.from('compliance_results').select('*').eq('machine_id', machine.id).single(),
+  const [{ data: config }, { data: snapshot }] = await Promise.all([
     supabase.from('golden_configs').select('*').eq('org_id', profile?.org_id).single(),
     supabase.from('machine_snapshots').select('*')
       .eq('machine_id', machine.id)
@@ -42,6 +42,8 @@ export default async function MePage() {
       .limit(1)
       .single(),
   ])
+
+  const compliance = config && snapshot ? computeCompliance(snapshot as any, config as any) : null
 
   const lastSynced = machine.last_synced_at
     ? new Date(machine.last_synced_at).toLocaleString()
@@ -55,7 +57,7 @@ export default async function MePage() {
           <p className="text-sm text-muted-foreground">Last synced: {lastSynced}</p>
         </div>
         {machine.health_score !== null && (
-          <div className={`text-3xl font-bold ${machine.health_score === 100 ? 'text-green-600' : machine.health_score >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+          <div className={`text-3xl font-bold ${machine.health_score >= 80 ? 'text-green-600' : machine.health_score >= 50 ? 'text-amber-500' : 'text-red-600'}`}>
             {machine.health_score}%
           </div>
         )}
