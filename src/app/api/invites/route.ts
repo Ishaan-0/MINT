@@ -16,20 +16,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Only managers can create invites' }, { status: 403 })
   }
 
-  // Check active subscription
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('stripe_subscription_id')
-    .eq('id', profile.org_id)
-    .single()
-
-  if (!org?.stripe_subscription_id) {
-    return NextResponse.json(
-      { error: 'Active subscription required to invite engineers' },
-      { status: 402 }
-    )
-  }
-
   const { data: invite, error } = await supabase
     .from('invites')
     .insert({ org_id: profile.org_id, created_by: user.id })

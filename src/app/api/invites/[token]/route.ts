@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { updateSeatCount } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
 import { isInviteValid } from './helpers'
 
@@ -56,20 +55,7 @@ export async function POST(
     .update({ org_id: invite.org_id, role: 'engineer' })
     .eq('id', user.id)
 
-  // Increment seat count
-  const { error: rpcError } = await supabase.rpc('increment_seat_count', { org_id: invite.org_id })
-  if (rpcError) return NextResponse.json({ error: 'Failed to increment seat count' }, { status: 500 })
-
-  // Update Stripe subscription seat count
-  const { data: orgForSeat } = await supabase
-    .from('organizations')
-    .select('seat_count, stripe_subscription_id')
-    .eq('id', invite.org_id)
-    .single()
-
-  if (orgForSeat?.stripe_subscription_id) {
-    await updateSeatCount(orgForSeat.stripe_subscription_id, orgForSeat.seat_count)
-  }
+  await supabase.rpc('increment_seat_count', { org_id: invite.org_id })
 
   return NextResponse.json({ success: true })
 }
