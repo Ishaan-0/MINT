@@ -16,6 +16,17 @@ export async function GET(request: Request) {
         role: 'manager', // default; changed to 'engineer' when accepting an invite
         org_id: null,
       }, { onConflict: 'id', ignoreDuplicates: true })
+
+      // Redirect new users (no org) to onboarding
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('org_id')
+        .eq('id', data.user.id)
+        .single()
+
+      if (!profile?.org_id) {
+        return NextResponse.redirect(new URL('/onboarding', origin).toString())
+      }
       return NextResponse.redirect(`${origin}/dashboard`)
     }
   }

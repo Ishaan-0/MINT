@@ -94,5 +94,6 @@ export type Invite = {
 export type EngineerHealthRow = {
   user: UserProfile
   machine: Machine | null
+  snapshot: MachineSnapshot | null
   compliance: ComplianceResult | null
 }

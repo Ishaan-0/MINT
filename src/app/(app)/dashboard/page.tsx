@@ -48,13 +48,28 @@ export default async function DashboardPage() {
     supabase.from('golden_configs').select('*').eq('org_id', profile.org_id).single(),
   ])
 
+  // Fetch latest snapshot per machine from machine_snapshots
+  const machineIds = (machines ?? []).map(m => m.id)
+  const { data: snapshots } = await supabase
+    .from('machine_snapshots')
+    .select('*')
+    .in('machine_id', machineIds)
+    .order('scanned_at', { ascending: false })
+
+  const latestSnapshot: Record<string, MachineSnapshot & { machine_id: string }> = {}
+  for (const snap of snapshots ?? []) {
+    if (!latestSnapshot[snap.machine_id]) {
+      latestSnapshot[snap.machine_id] = snap
+    }
+  }
+
   const rows: EngineerHealthRow[] = engineers.map(eng => {
     const machine = machines?.find(m => m.user_id === eng.id) ?? null
-    let compliance = null
-    if (machine && machine.snapshot && goldenConfig) {
-      compliance = computeCompliance(machine.snapshot as MachineSnapshot, goldenConfig)
-    }
-    return { user: eng as any, machine: machine as any, compliance }
+    const snapshot = machine ? (latestSnapshot[machine.id] ?? null) : null
+    const compliance = snapshot && goldenConfig
+      ? computeCompliance(snapshot as MachineSnapshot, goldenConfig)
+      : null
+    return { user: eng as any, machine: machine as any, snapshot, compliance }
   })
 
   return (

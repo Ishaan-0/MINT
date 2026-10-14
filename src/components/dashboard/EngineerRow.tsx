@@ -7,7 +7,7 @@ type Props = { row: EngineerHealthRow }
 
 export function EngineerRow({ row }: Props) {
   const [expanded, setExpanded] = useState(false)
-  const { user, machine, compliance } = row
+  const { user, machine, snapshot, compliance } = row
   const score = machine?.health_score
 
   const scoreColor = score == null ? 'text-muted-foreground' :
@@ -50,9 +50,9 @@ export function EngineerRow({ row }: Props) {
                 {compliance.failing.map((r: any) => (
                   <div key={r.tool} className="mb-2">
                     <p className="font-mono text-muted-foreground">{r.tool} {r.required_version ?? ''}</p>
-                    {machine?.snapshot && (
+                    {snapshot && (
                       <code className="text-xs bg-gray-100 p-1 rounded block mt-1">
-                        {getFixCommand(r, machine.snapshot as MachineSnapshot)}
+                        {getFixCommand(r, snapshot)}
                       </code>
                     )}
                   </div>
